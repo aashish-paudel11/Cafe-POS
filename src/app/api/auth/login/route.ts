@@ -40,8 +40,14 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const normalizedUsername = username.trim().toLowerCase();
     const user = await prisma.user.findFirst({
-      where: { username: { equals: username } },
+      where: {
+        username: {
+          equals: normalizedUsername,
+          mode: 'insensitive',
+        },
+      },
     });
 
     if (!user || !user.isActive) {

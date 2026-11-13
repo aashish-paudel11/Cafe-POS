@@ -63,7 +63,7 @@ A modern, fast, professional, and reliable Cafe Point of Sale (POS) and Floor Ma
 - **Framework**: Next.js 16 (App Router, Server Actions, Dynamic Route Handlers)
 - **Language**: TypeScript
 - **Styling**: Tailwind CSS v4 (Warm Cafe Palette: `#FFF8EB`, `#E5AE45`, `#3C2A20`)
-- **Database & ORM**: SQLite with Prisma ORM v6
+- **Database & ORM**: PostgreSQL with Prisma ORM v6
 - **Session & Security**: `iron-session` (HTTP-only encrypted cookies) + `bcryptjs`
 - **Arithmetic Engine**: `decimal.js` (precise financial calculations)
 - **Icons**: `lucide-react`
@@ -81,17 +81,19 @@ npm install
 ```
 
 ### 2. Environment Configuration
-Verify your `.env` file exists:
+Create your `.env` file based on `.env.example`:
 ```env
-DATABASE_URL="file:./dev.db"
-SESSION_PASSWORD="change-this-to-a-random-string-at-least-32-characters-long-for-production"
+# PostgreSQL connection string (Neon, Supabase, or local PostgreSQL)
+DATABASE_URL="postgresql://user:password@host/database?sslmode=require"
+SESSION_PASSWORD="your-strong-random-session-secret-at-least-32-chars"
 ```
 
 ### 3. Database Initialization
-Generate the Prisma client and synchronize the SQLite schema:
+Generate the Prisma client and push the schema to PostgreSQL:
 ```bash
-npx prisma generate
-npx prisma db push
+npm run postinstall
+npm run db:push
+npm run seed:admin
 ```
 
 ### 4. Running the Development Server
@@ -141,14 +143,26 @@ npm run start
 
 ---
 
-## 💾 Database Backup & Restore
+## 🌐 Deploying to Vercel (with Neon / Supabase PostgreSQL)
 
-Since SQLite is used, creating a full backup is as simple as copying `prisma/dev.db`:
-```bash
-# Backup
-copy prisma\dev.db prisma\dev.db.bak
+Vercel is serverless and requires a cloud PostgreSQL database (like **Neon** or **Supabase**):
 
-# Restore
-copy prisma\dev.db.bak prisma\dev.db
-```
-To transition to PostgreSQL in the future, change the provider in `prisma/schema.prisma` to `postgresql` and update `DATABASE_URL`.
+1. **Create Free Cloud PostgreSQL:**
+   - Go to [Neon.tech](https://neon.tech) (or [Supabase.com](https://supabase.com)) and create a free project.
+   - Copy the connection string, for example:
+     `postgresql://user:password@ep-cool-base.us-east-2.aws.neon.tech/neondb?sslmode=require`
+2. **Apply Database Schema & Admin Account:**
+   - In your local `.env`, set `DATABASE_URL` to your Neon/Supabase URL.
+   - Run:
+     ```bash
+     npm run db:push
+     npm run seed:admin
+     ```
+3. **Configure Vercel Project:**
+   - In your Vercel Dashboard, go to **Settings -> Environment Variables**.
+   - Add:
+     - `DATABASE_URL`: Your cloud PostgreSQL connection string.
+     - `SESSION_PASSWORD`: A random 32+ character string.
+4. **Deploy:**
+   - Push to GitHub (`git push origin main`). Vercel will automatically build and deploy.
+   - Visit your Vercel URL and log in with your administrator account!

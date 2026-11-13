@@ -54,7 +54,7 @@ export async function POST(request: NextRequest) {
   const normalizedUsername = username.trim().toLowerCase();
 
   const existing = await prisma.user.findFirst({
-    where: { username: normalizedUsername },
+    where: { username: { equals: normalizedUsername, mode: 'insensitive' } },
   });
 
   if (existing) {
@@ -122,7 +122,7 @@ export async function PUT(request: NextRequest) {
     // Check if username is already taken by another user
     const conflict = await prisma.user.findFirst({
       where: {
-        username: normalizedUsername,
+        username: { equals: normalizedUsername, mode: 'insensitive' },
         NOT: { id },
       },
     });
