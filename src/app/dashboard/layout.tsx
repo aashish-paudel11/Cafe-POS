@@ -25,6 +25,7 @@ const adminNav: NavItem[] = [
   { label: 'Reports', href: '/dashboard/reports', icon: <BarChart3 className="w-5 h-5" /> },
   { label: 'Staff', href: '/dashboard/staff', icon: <Users className="w-5 h-5" /> },
   { label: 'Settings', href: '/dashboard/settings', icon: <Settings className="w-5 h-5" /> },
+  { label: 'Account', href: '/dashboard/account', icon: <UserIcon className="w-5 h-5" /> },
 ];
 
 const waiterNav: NavItem[] = [
@@ -32,6 +33,7 @@ const waiterNav: NavItem[] = [
   { label: 'Tables', href: '/dashboard/tables', icon: <Grid3X3 className="w-5 h-5" /> },
   { label: 'Active Orders', href: '/dashboard/orders', icon: <ClipboardList className="w-5 h-5" /> },
   { label: 'Order History', href: '/dashboard/history', icon: <History className="w-5 h-5" /> },
+  { label: 'Account', href: '/dashboard/account', icon: <UserIcon className="w-5 h-5" /> },
 ];
 
 function getPageTitle(pathname: string): string {
@@ -45,6 +47,7 @@ function getPageTitle(pathname: string): string {
     '/dashboard/reports': 'Reports',
     '/dashboard/staff': 'Staff Management',
     '/dashboard/settings': 'Settings',
+    '/dashboard/account': 'My Account',
   };
   if (pathname.startsWith('/dashboard/orders/')) return 'Order Details';
   if (pathname.startsWith('/dashboard/tables/')) return 'Table';

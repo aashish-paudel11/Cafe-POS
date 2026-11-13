@@ -10,7 +10,6 @@ export async function GET() {
   }
 
   const tables = await prisma.cafeTable.findMany({
-    where: { isActive: true },
     orderBy: { displayOrder: 'asc' },
   });
 
@@ -35,7 +34,8 @@ export async function GET() {
     capacity: t.capacity,
     section: t.section,
     displayOrder: t.displayOrder,
-    status: orderMap.has(t.id) ? 'occupied' : 'available',
+    isActive: t.isActive,
+    status: !t.isActive ? 'disabled' : orderMap.has(t.id) ? 'occupied' : 'available',
     activeOrder: orderMap.get(t.id) || null,
   }));
 

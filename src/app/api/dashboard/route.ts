@@ -12,26 +12,54 @@ export async function GET() {
 
   const { start: todayStart, end: todayEnd } = getToday();
 
-  // Tables
+  // Active physical tables
   const tables = await prisma.cafeTable.findMany({ where: { isActive: true } });
-  const occupiedTableIds = (await prisma.order.findMany({
+  const openOrders = await prisma.order.findMany({
     where: { status: 'open' },
     select: { tableId: true },
-  })).map((o) => o.tableId);
+  });
+  const occupiedTableIds = openOrders.map((o) => o.tableId);
 
-  // Today's paid payments
+  // Recent orders
+  const recentOrders = await prisma.order.findMany({
+    take: 6,
+    orderBy: { createdAt: 'desc' },
+    include: {
+      table: true,
+      createdBy: { select: { fullName: true } },
+      items: true,
+    },
+  });
+
+  const formattedRecentOrders = recentOrders.map((o) => ({
+    id: o.id,
+    orderNumber: o.orderNumber,
+    tableName: o.tableName,
+    status: o.status,
+    total: calculateOrderTotal(o.items),
+    itemCount: o.items.reduce((acc, i) => acc + i.quantity, 0),
+    createdBy: o.createdBy.fullName,
+    createdAt: o.createdAt,
+  }));
+
+  // If user is a Waiter, return operational floor data without sensitive financial statistics
+  if (session.role !== 'admin') {
+    return NextResponse.json({
+      role: 'waiter',
+      totalTables: tables.length,
+      availableTables: tables.length - occupiedTableIds.length,
+      occupiedTables: occupiedTableIds.length,
+      activeOrdersCount: occupiedTableIds.length,
+      recentOrders: formattedRecentOrders,
+    });
+  }
+
+  // Admin Data: Calculate today's paid sales
   const todayPayments = await prisma.payment.findMany({
     where: { paidAt: { gte: todayStart, lte: todayEnd } },
   });
   const todaySales = todayPayments.reduce((sum, p) => sum + p.amount, 0);
   const todayOrderCount = todayPayments.length;
-
-  // Recent orders
-  const recentOrders = await prisma.order.findMany({
-    take: 5,
-    orderBy: { createdAt: 'desc' },
-    include: { table: true, createdBy: { select: { fullName: true } }, items: true },
-  });
 
   // Best selling items (last 30 days)
   const { start: thirtyDaysAgo } = getDateRange(30);
@@ -69,22 +97,14 @@ export async function GET() {
   }
 
   return NextResponse.json({
+    role: 'admin',
     totalTables: tables.length,
     availableTables: tables.length - occupiedTableIds.length,
     occupiedTables: occupiedTableIds.length,
     todaySales,
     todayOrderCount,
-    recentOrders: recentOrders.map((o) => ({
-      id: o.id,
-      orderNumber: o.orderNumber,
-      tableName: o.tableName,
-      status: o.status,
-      total: calculateOrderTotal(o.items),
-      createdBy: o.createdBy.fullName,
-      createdAt: o.createdAt,
-    })),
+    recentOrders: formattedRecentOrders,
     bestSelling,
     dailySales,
-    role: session.role,
   });
 }

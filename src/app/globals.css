@@ -86,6 +86,32 @@
 }
 
 @media print {
-  .no-print { display: none !important; }
-  body { background: white !important; margin: 0; padding: 0; }
+  @page {
+    size: auto;
+    margin: 0;
+  }
+  
+  .no-print,
+  nav,
+  aside,
+  header {
+    display: none !important;
+  }
+  
+  body, html {
+    background: white !important;
+    color: black !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 100% !important;
+    height: auto !important;
+  }
+
+  .print-overlay-reset {
+    position: static !important;
+    background: transparent !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    box-shadow: none !important;
+  }
 }

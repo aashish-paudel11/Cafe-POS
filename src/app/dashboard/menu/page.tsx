@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import {
   UtensilsCrossed, Plus, Search, Edit2, Trash2, CheckCircle2,
-  XCircle, Loader2, X, FolderPlus, Tag
+  XCircle, Loader2, X, FolderPlus, Tag, Settings2, Save
 } from 'lucide-react';
 
 interface Category {
@@ -48,6 +48,8 @@ export default function MenuPage() {
   });
 
   const [categoryName, setCategoryName] = useState('');
+  const [editingCategoryId, setEditingCategoryId] = useState<string | null>(null);
+  const [editingCategoryName, setEditingCategoryName] = useState('');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
 
@@ -187,10 +189,49 @@ export default function MenuPage() {
       }
 
       setCategoryName('');
-      setShowCategoryModal(false);
       await loadData();
     } catch {
       setError('Network error');
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function handleUpdateCategory(id: string) {
+    if (!editingCategoryName.trim()) return;
+    setSaving(true);
+    try {
+      const res = await fetch('/api/categories', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id, name: editingCategoryName.trim() }),
+      });
+      if (res.ok) {
+        setEditingCategoryId(null);
+        await loadData();
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function handleDeleteCategory(id: string, count: number) {
+    if (count > 0) {
+      alert(`Cannot delete this category because it contains ${count} menu item(s). Reassign or remove items first.`);
+      return;
+    }
+    if (!confirm('Delete this unused category?')) return;
+    setSaving(true);
+    try {
+      const res = await fetch(`/api/categories?id=${id}`, { method: 'DELETE' });
+      if (res.ok) {
+        if (selectedCategory === id) setSelectedCategory('all');
+        await loadData();
+      }
+    } catch (err) {
+      console.error(err);
     } finally {
       setSaving(false);
     }
@@ -237,13 +278,13 @@ export default function MenuPage() {
       {/* Top Header & Actions */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div className="relative flex-1 max-w-md">
-          <Search className="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 text-[#8B7355]" />
+          <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-[#8B7355]" />
           <input
             type="text"
             placeholder="Search food or beverage..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="input-field pl-10"
+            className="input-field pl-9 text-xs py-2"
           />
         </div>
 
@@ -255,14 +296,14 @@ export default function MenuPage() {
                 setCategoryName('');
                 setShowCategoryModal(true);
               }}
-              className="btn-secondary flex items-center gap-2 text-sm"
+              className="btn-secondary flex items-center gap-1.5 text-xs py-2 px-3 font-medium"
             >
-              <FolderPlus className="w-4 h-4" /> Add Category
+              <Settings2 className="w-3.5 h-3.5 text-[#E5AE45]" /> Manage Categories
             </button>
             <button
               onClick={openAddItem}
               disabled={categories.length === 0}
-              className="btn-primary flex items-center gap-2 text-sm"
+              className="btn-primary flex items-center gap-1.5 text-xs py-2 px-4 font-bold shadow-sm"
             >
               <Plus className="w-4 h-4" /> Add Menu Item
             </button>
@@ -271,12 +312,12 @@ export default function MenuPage() {
       </div>
 
       {/* Category Pills */}
-      <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none">
+      <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
         <button
           onClick={() => setSelectedCategory('all')}
-          className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${
+          className={`px-3.5 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-colors ${
             selectedCategory === 'all'
-              ? 'bg-[#E5AE45] text-white'
+              ? 'bg-[#E5AE45] text-white shadow-sm'
               : 'bg-white text-[#3C2A20] border border-[#E8DCC8] hover:bg-[#F2E8D5]'
           }`}
         >
@@ -286,9 +327,9 @@ export default function MenuPage() {
           <button
             key={c.id}
             onClick={() => setSelectedCategory(c.id)}
-            className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${
+            className={`px-3.5 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-colors ${
               selectedCategory === c.id
-                ? 'bg-[#E5AE45] text-white'
+                ? 'bg-[#E5AE45] text-white shadow-sm'
                 : 'bg-white text-[#3C2A20] border border-[#E8DCC8] hover:bg-[#F2E8D5]'
             }`}
           >
@@ -301,9 +342,9 @@ export default function MenuPage() {
       {categories.length === 0 && (
         <div className="card p-8 text-center bg-amber-50/50 border-amber-200">
           <Tag className="w-10 h-10 mx-auto text-[#E5AE45] mb-2" />
-          <h3 className="text-base font-semibold text-[#3C2A20]">No Categories Created</h3>
-          <p className="text-sm text-[#8B7355] mt-1 mb-4">
-            Create at least one category (e.g. &quot;Coffee&quot;, &quot;Snacks&quot;) before adding menu items.
+          <h3 className="text-base font-semibold text-[#3C2A20]">No Categories Configured</h3>
+          <p className="text-xs text-[#8B7355] mt-1 mb-4">
+            Create categories (e.g. &quot;Espresso & Coffee&quot;, &quot;Bakery&quot;) before adding items.
           </p>
           {role === 'admin' && (
             <button
@@ -312,9 +353,9 @@ export default function MenuPage() {
                 setCategoryName('');
                 setShowCategoryModal(true);
               }}
-              className="btn-primary inline-flex items-center gap-2"
+              className="btn-primary inline-flex items-center gap-2 text-xs py-2 px-4"
             >
-              <FolderPlus className="w-4 h-4" /> Create Category
+              <FolderPlus className="w-4 h-4" /> Add First Category
             </button>
           )}
         </div>
@@ -322,11 +363,11 @@ export default function MenuPage() {
 
       {/* Menu Item Grid */}
       {filteredItems.length === 0 && categories.length > 0 ? (
-        <div className="card p-12 text-center">
+        <div className="card p-12 text-center text-[#8B7355]">
           <UtensilsCrossed className="w-12 h-12 mx-auto text-[#E8DCC8] mb-3" />
-          <h3 className="text-base font-semibold text-[#3C2A20]">No Items Found</h3>
-          <p className="text-sm text-[#8B7355] mt-1">
-            {search ? 'Try modifying your search query.' : 'Add items to this category.'}
+          <h3 className="text-base font-bold text-[#3C2A20]">No Items in Category</h3>
+          <p className="text-xs mt-1">
+            {search ? 'Try modifying your search query.' : 'Add menu items to this category.'}
           </p>
         </div>
       ) : (
@@ -335,18 +376,18 @@ export default function MenuPage() {
             <div
               key={item.id}
               className={`card p-4 flex flex-col justify-between transition-all duration-200 ${
-                !item.isAvailable ? 'opacity-65 bg-gray-50/70' : 'hover:shadow-md'
+                !item.isAvailable ? 'opacity-65 bg-gray-50/70 border-dashed' : 'hover:shadow-md'
               }`}
             >
               <div>
                 <div className="flex items-start justify-between gap-2 mb-2">
                   <div>
-                    <span className="inline-block px-2 py-0.5 rounded text-xs font-medium bg-[#F2E8D5] text-[#8B7355] mb-1">
+                    <span className="inline-block px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-[#F2E8D5] text-[#8B7355] mb-1">
                       {item.category.name}
                     </span>
-                    <h4 className="font-semibold text-base text-[#3C2A20]">{item.name}</h4>
+                    <h4 className="font-bold text-sm text-[#3C2A20]">{item.name}</h4>
                   </div>
-                  <span className="font-bold text-base text-[#E5AE45] whitespace-nowrap">
+                  <span className="font-black text-sm text-[#E5AE45] whitespace-nowrap">
                     NPR {item.price.toFixed(2)}
                   </span>
                 </div>
@@ -361,7 +402,7 @@ export default function MenuPage() {
                 {role === 'admin' ? (
                   <button
                     onClick={() => handleToggleAvailability(item)}
-                    className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium transition-colors ${
+                    className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold transition-colors ${
                       item.isAvailable
                         ? 'bg-green-100 text-[#4A7C59] hover:bg-green-200'
                         : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
@@ -380,7 +421,7 @@ export default function MenuPage() {
                   </button>
                 ) : (
                   <span
-                    className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium ${
+                    className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold ${
                       item.isAvailable ? 'bg-green-100 text-[#4A7C59]' : 'bg-gray-200 text-gray-700'
                     }`}
                   >
@@ -396,14 +437,14 @@ export default function MenuPage() {
                       className="p-1.5 text-[#8B7355] hover:text-[#3C2A20] rounded-lg hover:bg-[#F2E8D5] transition-colors"
                       title="Edit Item"
                     >
-                      <Edit2 className="w-4 h-4" />
+                      <Edit2 className="w-3.5 h-3.5" />
                     </button>
                     <button
                       onClick={() => handleDeleteItem(item.id)}
                       className="p-1.5 text-[#8B7355] hover:text-[#C44536] rounded-lg hover:bg-red-50 transition-colors"
                       title="Delete Item"
                     >
-                      <Trash2 className="w-4 h-4" />
+                      <Trash2 className="w-3.5 h-3.5" />
                     </button>
                   </div>
                 )}
@@ -424,7 +465,7 @@ export default function MenuPage() {
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-bold text-[#3C2A20]">
+              <h3 className="text-base font-bold text-[#3C2A20]">
                 {editingItem ? 'Edit Menu Item' : 'New Menu Item'}
               </h3>
               <button
@@ -436,20 +477,20 @@ export default function MenuPage() {
             </div>
 
             {error && (
-              <div className="bg-red-50 border border-red-200 text-[#C44536] p-3 rounded-lg text-sm mb-4">
+              <div className="bg-red-50 border border-red-200 text-[#C44536] p-3 rounded-lg text-xs mb-4">
                 {error}
               </div>
             )}
 
-            <div className="space-y-4">
+            <div className="space-y-3.5">
               <div>
                 <label className="label-text">Item Name *</label>
                 <input
                   type="text"
                   value={itemForm.name}
                   onChange={(e) => setItemForm({ ...itemForm, name: e.target.value })}
-                  placeholder="e.g. Caramel Latte, Club Sandwich"
-                  className="input-field"
+                  placeholder="e.g. Caramel Macchiato, Butter Croissant"
+                  className="input-field text-xs"
                 />
               </div>
 
@@ -458,7 +499,7 @@ export default function MenuPage() {
                 <select
                   value={itemForm.categoryId}
                   onChange={(e) => setItemForm({ ...itemForm, categoryId: e.target.value })}
-                  className="input-field"
+                  className="input-field text-xs"
                 >
                   <option value="" disabled>
                     Select category
@@ -472,7 +513,7 @@ export default function MenuPage() {
               </div>
 
               <div>
-                <label className="label-text">Selling Price (NPR, Tax Inclusive) *</label>
+                <label className="label-text">Selling Price (NPR, Tax-Inclusive) *</label>
                 <input
                   type="number"
                   step="0.01"
@@ -480,10 +521,10 @@ export default function MenuPage() {
                   value={itemForm.price}
                   onChange={(e) => setItemForm({ ...itemForm, price: e.target.value })}
                   placeholder="0.00"
-                  className="input-field"
+                  className="input-field text-xs font-bold"
                 />
-                <p className="text-xs text-[#8B7355] mt-1">
-                  Tax inclusive. This is the exact customer-facing price.
+                <p className="text-[10px] text-[#8B7355] mt-1">
+                  Tax-inclusive price. This will be charged to the customer with no extra tax added.
                 </p>
               </div>
 
@@ -493,8 +534,8 @@ export default function MenuPage() {
                   rows={2}
                   value={itemForm.description}
                   onChange={(e) => setItemForm({ ...itemForm, description: e.target.value })}
-                  placeholder="Ingredients or description..."
-                  className="input-field"
+                  placeholder="Ingredients or preparation note..."
+                  className="input-field text-xs"
                 />
               </div>
 
@@ -504,19 +545,19 @@ export default function MenuPage() {
                   id="isAvailable"
                   checked={itemForm.isAvailable}
                   onChange={(e) => setItemForm({ ...itemForm, isAvailable: e.target.checked })}
-                  className="w-4 h-4 text-[#E5AE45] rounded border-[#E8DCC8] focus:ring-[#E5AE45]"
+                  className="w-4 h-4 text-[#E5AE45] rounded border-[#E8DCC8]"
                 />
-                <label htmlFor="isAvailable" className="text-sm font-medium text-[#3C2A20]">
+                <label htmlFor="isAvailable" className="text-xs font-semibold text-[#3C2A20]">
                   Available to order immediately
                 </label>
               </div>
             </div>
 
-            <div className="flex gap-3 mt-6">
+            <div className="flex gap-2.5 mt-5">
               <button
                 type="button"
                 onClick={() => setShowItemModal(false)}
-                className="btn-secondary flex-1"
+                className="btn-secondary flex-1 text-xs"
               >
                 Cancel
               </button>
@@ -524,9 +565,9 @@ export default function MenuPage() {
                 type="button"
                 onClick={handleSaveItem}
                 disabled={saving}
-                className="btn-primary flex-1 flex items-center justify-center gap-2"
+                className="btn-primary flex-1 text-xs font-bold flex items-center justify-center gap-1.5"
               >
-                {saving && <Loader2 className="w-4 h-4 animate-spin" />}
+                {saving && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
                 {editingItem ? 'Save Changes' : 'Create Item'}
               </button>
             </div>
@@ -534,15 +575,18 @@ export default function MenuPage() {
         </div>
       )}
 
-      {/* Category Modal */}
+      {/* Category Management Modal (Add, Rename, Delete) */}
       {showCategoryModal && (
         <div
           className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4"
           onClick={() => setShowCategoryModal(false)}
         >
-          <div className="card p-6 w-full max-w-sm" onClick={(e) => e.stopPropagation()}>
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-bold text-[#3C2A20]">Add Category</h3>
+          <div
+            className="card p-6 w-full max-w-md max-h-[85vh] overflow-y-auto space-y-4"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between pb-2 border-b border-[#E8DCC8]">
+              <h3 className="text-base font-bold text-[#3C2A20]">Manage Menu Categories</h3>
               <button
                 onClick={() => setShowCategoryModal(false)}
                 className="text-[#8B7355] hover:text-[#3C2A20]"
@@ -552,41 +596,107 @@ export default function MenuPage() {
             </div>
 
             {error && (
-              <div className="bg-red-50 border border-red-200 text-[#C44536] p-3 rounded-lg text-sm mb-4">
+              <div className="bg-red-50 border border-red-200 text-[#C44536] p-2.5 rounded-lg text-xs">
                 {error}
               </div>
             )}
 
-            <div className="space-y-4">
-              <div>
-                <label className="label-text">Category Name *</label>
+            {/* Create Category Form */}
+            <div className="space-y-2">
+              <label className="label-text">Add New Category</label>
+              <div className="flex gap-2">
                 <input
                   type="text"
                   value={categoryName}
                   onChange={(e) => setCategoryName(e.target.value)}
-                  placeholder="e.g. Hot Coffee, Bakery, Desserts"
-                  className="input-field"
-                  autoFocus
+                  placeholder="e.g. Cold Brews, Salads"
+                  className="input-field text-xs flex-1"
                 />
+                <button
+                  type="button"
+                  onClick={handleCreateCategory}
+                  disabled={saving || !categoryName.trim()}
+                  className="btn-primary text-xs px-3 py-2 font-bold whitespace-nowrap"
+                >
+                  Add
+                </button>
               </div>
             </div>
 
-            <div className="flex gap-3 mt-6">
+            {/* List of existing categories */}
+            <div className="space-y-2 pt-2 border-t border-[#E8DCC8]">
+              <label className="label-text">Existing Categories</label>
+              {categories.length === 0 ? (
+                <p className="text-xs text-[#8B7355]">No categories yet.</p>
+              ) : (
+                <div className="divide-y divide-[#E8DCC8]/60 border border-[#E8DCC8] rounded-lg overflow-hidden">
+                  {categories.map((c) => (
+                    <div key={c.id} className="p-2.5 flex items-center justify-between bg-white">
+                      {editingCategoryId === c.id ? (
+                        <div className="flex items-center gap-2 flex-1 mr-2">
+                          <input
+                            type="text"
+                            value={editingCategoryName}
+                            onChange={(e) => setEditingCategoryName(e.target.value)}
+                            className="input-field text-xs py-1 px-2"
+                            autoFocus
+                          />
+                          <button
+                            onClick={() => handleUpdateCategory(c.id)}
+                            className="btn-primary p-1.5 rounded"
+                            title="Save Rename"
+                          >
+                            <Save className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            onClick={() => setEditingCategoryId(null)}
+                            className="btn-secondary p-1.5 rounded"
+                            title="Cancel"
+                          >
+                            <X className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      ) : (
+                        <div>
+                          <p className="font-semibold text-xs text-[#3C2A20]">{c.name}</p>
+                          <p className="text-[10px] text-[#8B7355]">{c.itemCount} items assigned</p>
+                        </div>
+                      )}
+
+                      {editingCategoryId !== c.id && (
+                        <div className="flex items-center gap-1">
+                          <button
+                            onClick={() => {
+                              setEditingCategoryId(c.id);
+                              setEditingCategoryName(c.name);
+                            }}
+                            className="p-1 text-[#8B7355] hover:text-[#3C2A20]"
+                            title="Rename"
+                          >
+                            <Edit2 className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            onClick={() => handleDeleteCategory(c.id, c.itemCount)}
+                            className="p-1 text-[#8B7355] hover:text-[#C44536]"
+                            title="Delete Category"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div className="pt-2">
               <button
                 type="button"
                 onClick={() => setShowCategoryModal(false)}
-                className="btn-secondary flex-1"
+                className="btn-secondary w-full text-xs"
               >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={handleCreateCategory}
-                disabled={saving}
-                className="btn-primary flex-1 flex items-center justify-center gap-2"
-              >
-                {saving && <Loader2 className="w-4 h-4 animate-spin" />}
-                Create
+                Done
               </button>
             </div>
           </div>

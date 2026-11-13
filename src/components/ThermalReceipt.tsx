@@ -48,7 +48,7 @@ export default function ThermalReceipt({
   onClose,
 }: ReceiptProps) {
   const is58mm = business.receiptPaperSize === '58mm';
-  const widthClass = is58mm ? 'max-w-[320px]' : 'max-w-[420px]';
+  const widthClass = is58mm ? 'max-w-[320px] print:w-[58mm]' : 'max-w-[420px] print:w-[80mm]';
 
   const dateObj = new Date(paidAt || createdAt);
   const formattedDate = dateObj.toLocaleDateString('en-US', {
@@ -66,9 +66,9 @@ export default function ThermalReceipt({
   }
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4 overflow-y-auto">
+    <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4 overflow-y-auto print-overlay-reset">
       {/* Printable Area Container */}
-      <div className="relative bg-white rounded-xl shadow-xl w-full max-h-[90vh] flex flex-col items-center p-6 max-w-lg">
+      <div className="relative bg-white rounded-xl shadow-xl w-full max-h-[90vh] flex flex-col items-center p-6 max-w-lg print-overlay-reset">
         {/* Modal Controls (Not printed) */}
         <div className="no-print w-full flex items-center justify-between pb-4 mb-4 border-b border-[#E8DCC8]">
           <div className="flex items-center gap-2">
