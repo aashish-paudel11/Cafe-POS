@@ -66,10 +66,18 @@ function DashboardLayoutContent({ children }: { children: ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
   const [user, setUser] = useState<SessionUser | null>(null);
+  const [cafeName, setCafeName] = useState('Cafe POS');
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
 
   useEffect(() => {
+    fetch('/api/settings/public')
+      .then((r) => r.json())
+      .then((d) => {
+        if (d.cafeName) setCafeName(d.cafeName);
+      })
+      .catch(() => {});
+
     fetch('/api/auth/me')
       .then((r) => r.json())
       .then((data) => {
@@ -122,10 +130,12 @@ function DashboardLayoutContent({ children }: { children: ReactNode }) {
       >
         {/* Logo */}
         <div className="flex items-center gap-3 px-6 py-5 border-b border-[#E8DCC8]">
-          <div className="w-9 h-9 rounded-lg bg-[#E5AE45] flex items-center justify-center">
+          <div className="w-9 h-9 rounded-lg bg-[#E5AE45] flex items-center justify-center shrink-0">
             <Coffee className="w-5 h-5 text-white" />
           </div>
-          <span className="text-lg font-bold text-[#3C2A20]">Cafe POS</span>
+          <span className="text-base font-bold text-[#3C2A20] truncate max-w-[145px]" title={cafeName}>
+            {cafeName}
+          </span>
           <button
             onClick={() => setSidebarOpen(false)}
             className="ml-auto lg:hidden text-[#8B7355] hover:text-[#3C2A20]"

@@ -4,8 +4,13 @@ import { useState, useEffect, FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
 import { Coffee, Eye, EyeOff, Loader2 } from 'lucide-react';
 
-export default function LoginPage() {
+interface LoginPageProps {
+  initialCafeName?: string;
+}
+
+export default function LoginPage({ initialCafeName }: LoginPageProps = {}) {
   const router = useRouter();
+  const [cafeName, setCafeName] = useState(initialCafeName || '');
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [rememberMe, setRememberMe] = useState(true);
@@ -14,6 +19,16 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
+    // Dynamically retrieve cafe name from public settings
+    fetch('/api/settings/public')
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.cafeName) {
+          setCafeName(data.cafeName);
+        }
+      })
+      .catch(() => {});
+
     // Single-device remembered username check
     try {
       const savedUser = localStorage.getItem('cafe_pos_remembered_username');
@@ -84,7 +99,7 @@ export default function LoginPage() {
           <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-[#E5AE45] mb-3 shadow-sm">
             <Coffee className="w-8 h-8 text-white" />
           </div>
-          <h1 className="text-3xl font-extrabold text-[#3C2A20]">Cafe POS</h1>
+          <h1 className="text-3xl font-extrabold text-[#3C2A20] tracking-tight">{cafeName || 'Cafe POS'}</h1>
           <p className="text-sm text-[#8B7355] mt-1 font-medium">Floor & Order Management System</p>
         </div>
 

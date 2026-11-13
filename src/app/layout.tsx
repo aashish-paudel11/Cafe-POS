@@ -5,8 +5,13 @@ import "./globals.css";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Cafe POS",
-  description: "Cafe Point of Sale & Management System",
+  title: "Cafe POS & Floor Management",
+  description: "Point of Sale & Floor Management System",
+  icons: {
+    icon: "/icon.svg",
+    shortcut: "/icon.svg",
+    apple: "/icon.svg",
+  },
 };
 
 export default function RootLayout({
