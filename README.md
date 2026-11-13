@@ -7,11 +7,12 @@ A modern, fast, professional, and reliable Cafe Point of Sale (POS) and Floor Ma
 ## ☕ Key Features
 
 1. **Secure Authentication & Role-Based Access Control (RBAC)**
-   - Initial one-time admin setup wizard (`/setup`).
-   - Secure login screen (`/login`) with rate limiting and secure HTTP-only cookies via `iron-session`.
+   - Managed admin onboarding (`npm run seed:admin`) avoiding public first-run setup risks.
+   - Secure login screen (`/login` and root `/`) with single-device "Remember me on this device", rate limiting, and secure HTTP-only cookies via `iron-session`.
    - Distinct **Admin** and **Waiter** dashboards with server-side permission verification.
-2. **Physical Table Management**
+2. **Physical Table & Location Management**
    - Independent physical tables representing real cafe seating.
+   - Customizable table locations/sections (*Indoor*, *Terrace*, *Balcony*, *Rooftop*, *Garden*, etc.) with dedicated location management.
    - Visually attractive table cards with capacity, sectioning, and live order value.
    - Real-time status: **Available**, **Occupied**, **Disabled**.
    - Admin can add, edit, reorder, and soft-deactivate tables to expand or adjust seating capacity without losing historical records.
@@ -101,15 +102,16 @@ Open [http://localhost:3000](http://localhost:3000) in your web browser.
 
 ---
 
-## 🔑 Initial Administrator Setup
+## 🔑 Administrator Provisioning & Staff Onboarding
 
-1. On first launch, navigating to [http://localhost:3000](http://localhost:3000) will automatically redirect to the setup wizard at `/setup`.
-2. Enter your:
-   - **Cafe Name** (e.g. *The Coffee House*)
-   - **Full Name** (e.g. *Cafe Manager*)
-   - **Username** (e.g. *admin*)
-   - **Password** (minimum 6 characters)
-3. Once completed, the setup endpoint locks permanently and redirects to `/login`.
+1. Initialize the primary administrator credentials securely via terminal:
+   ```bash
+   npm run seed:admin
+   ```
+   *(Default: username `admin`, password `admin123`. You can customize via `ADMIN_USERNAME` and `ADMIN_PASSWORD` environment variables).*
+2. Log in at [http://localhost:3000](http://localhost:3000).
+3. The owner can immediately change their password under **My Account** (`/dashboard/account`).
+4. The admin can then add waiter accounts under **Staff Management** (`/dashboard/staff`), provide waiters with their individual credentials, or toggle and reset access at any time. Waiters cannot access settings, financial reports, or staff management.
 
 ---
 

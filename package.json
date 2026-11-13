@@ -8,6 +8,7 @@
     "start": "next start",
     "lint": "eslint",
     "test:e2e": "tsx test-e2e.ts",
+    "seed:admin": "tsx scripts/seed-admin.ts",
     "reset:db": "tsx reset-db.ts"
   },
   "dependencies": {

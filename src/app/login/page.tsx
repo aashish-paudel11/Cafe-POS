@@ -2,8 +2,7 @@
 
 import { useState, useEffect, FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
-import { Coffee, Eye, EyeOff, Loader2, ShieldCheck, CheckSquare, Square } from 'lucide-react';
-import Link from 'next/link';
+import { Coffee, Eye, EyeOff, Loader2 } from 'lucide-react';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -13,19 +12,8 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const [needsSetup, setNeedsSetup] = useState(false);
 
   useEffect(() => {
-    // Check if initial setup is needed
-    fetch('/api/auth/check-setup')
-      .then((r) => r.json())
-      .then((data) => {
-        if (data.needsSetup) {
-          setNeedsSetup(true);
-        }
-      })
-      .catch(() => {});
-
     // Single-device remembered username check
     try {
       const savedUser = localStorage.getItem('cafe_pos_remembered_username');
@@ -78,7 +66,7 @@ export default function LoginPage() {
         // Ignore
       }
 
-      // Navigate within the same page / browser window
+      // Seamlessly navigate to dashboard in the same window
       router.push('/dashboard');
       router.refresh();
     } catch {
@@ -99,25 +87,6 @@ export default function LoginPage() {
           <h1 className="text-3xl font-extrabold text-[#3C2A20]">Cafe POS</h1>
           <p className="text-sm text-[#8B7355] mt-1 font-medium">Floor & Order Management System</p>
         </div>
-
-        {/* Notice if First-Time Setup is required */}
-        {needsSetup && (
-          <div className="card p-4 mb-4 bg-amber-50/80 border-amber-300 text-xs text-[#3C2A20] space-y-2">
-            <div className="flex items-center gap-2 font-bold text-amber-900">
-              <ShieldCheck className="w-4 h-4 text-[#E5AE45]" />
-              <span>Initial Setup Required</span>
-            </div>
-            <p className="text-[#8B7355]">
-              No administrator account has been set up yet. Please create your primary admin account to get started.
-            </p>
-            <Link
-              href="/setup"
-              className="btn-primary w-full py-2 text-xs font-bold text-center block mt-1"
-            >
-              Set Up Administrator Account
-            </Link>
-          </div>
-        )}
 
         <div className="card p-8 shadow-sm border border-[#E8DCC8]">
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -199,9 +168,9 @@ export default function LoginPage() {
           </form>
         </div>
 
-        {/* Subtle Footer Note */}
+        {/* Private System Notice */}
         <p className="text-center text-[11px] text-[#8B7355] mt-6">
-          Authorized cafe staff and administrator portal only.
+          Authorized staff & management portal only. Contact the cafe owner for account access.
         </p>
       </div>
     </div>
