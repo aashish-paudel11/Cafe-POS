@@ -1,5 +1,6 @@
 import { redirect } from 'next/navigation';
-import { getSession, checkAdminExists } from '@/lib/session';
+import { getSession } from '@/lib/session';
+import LoginPage from './login/page';
 
 export const dynamic = 'force-dynamic';
 
@@ -10,10 +11,5 @@ export default async function HomePage() {
     redirect('/dashboard');
   }
   
-  const adminExists = await checkAdminExists();
-  if (!adminExists) {
-    redirect('/setup');
-  }
-  
-  redirect('/login');
+  return <LoginPage />;
 }

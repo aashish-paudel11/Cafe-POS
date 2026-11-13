@@ -31,7 +31,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { username, password } = body;
+    const { username, password, rememberMe } = body;
 
     if (!username || !password) {
       return NextResponse.json(
@@ -60,7 +60,14 @@ export async function POST(request: NextRequest) {
     }
 
     const cookieStore = await cookies();
-    const session = await getIronSession<SessionData>(cookieStore, sessionOptions);
+    const dynamicOptions = {
+      ...sessionOptions,
+      cookieOptions: {
+        ...sessionOptions.cookieOptions,
+        maxAge: rememberMe ? 60 * 60 * 24 * 30 : 60 * 60 * 12, // 30 days if remember me is checked
+      },
+    };
+    const session = await getIronSession<SessionData>(cookieStore, dynamicOptions);
     session.userId = user.id;
     session.username = user.username;
     session.fullName = user.fullName;
