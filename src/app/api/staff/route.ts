@@ -90,16 +90,60 @@ export async function PUT(request: NextRequest) {
   }
 
   const body = await request.json();
-  const { id, fullName, password, isActive } = body;
+  const { id, fullName, username, password, role, isActive } = body;
 
   if (!id) {
     return NextResponse.json({ error: 'User ID is required' }, { status: 400 });
   }
 
-  const updateData: any = {};
-  if (fullName !== undefined) updateData.fullName = fullName.trim();
-  if (isActive !== undefined) updateData.isActive = Boolean(isActive);
-  if (password && password.length >= 6) {
+  const existingTarget = await prisma.user.findUnique({
+    where: { id },
+  });
+
+  if (!existingTarget) {
+    return NextResponse.json({ error: 'User not found' }, { status: 404 });
+  }
+
+  const updateData: Record<string, any> = {};
+
+  if (fullName !== undefined) {
+    const trimmed = fullName.trim();
+    if (!trimmed) {
+      return NextResponse.json({ error: 'Full name cannot be empty' }, { status: 400 });
+    }
+    updateData.fullName = trimmed;
+  }
+
+  if (username !== undefined) {
+    const normalizedUsername = username.trim().toLowerCase();
+    if (normalizedUsername.length < 3) {
+      return NextResponse.json({ error: 'Username must be at least 3 characters' }, { status: 400 });
+    }
+    // Check if username is already taken by another user
+    const conflict = await prisma.user.findFirst({
+      where: {
+        username: normalizedUsername,
+        NOT: { id },
+      },
+    });
+    if (conflict) {
+      return NextResponse.json({ error: 'Username is already taken by another account' }, { status: 400 });
+    }
+    updateData.username = normalizedUsername;
+  }
+
+  if (isActive !== undefined) {
+    updateData.isActive = Boolean(isActive);
+  }
+
+  if (role !== undefined && (role === 'admin' || role === 'waiter')) {
+    updateData.role = role;
+  }
+
+  if (password !== undefined && password !== '') {
+    if (password.length < 6) {
+      return NextResponse.json({ error: 'Password must be at least 6 characters' }, { status: 400 });
+    }
     updateData.passwordHash = await bcrypt.hash(password, 10);
   }
 
@@ -112,6 +156,13 @@ export async function PUT(request: NextRequest) {
       fullName: true,
       role: true,
       isActive: true,
+      createdAt: true,
+      _count: {
+        select: {
+          createdOrders: true,
+          payments: true,
+        },
+      },
     },
   });
 

@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import {
   Users, UserPlus, Key, Shield, User,
-  CheckCircle2, XCircle, Loader2, X, AlertCircle
+  CheckCircle2, XCircle, Loader2, X, AlertCircle, Pencil
 } from 'lucide-react';
 
 interface StaffUser {
@@ -25,6 +25,7 @@ export default function StaffPage() {
 
   // Modals
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [editingUser, setEditingUser] = useState<StaffUser | null>(null);
   const [resettingUser, setResettingUser] = useState<StaffUser | null>(null);
 
   // Forms
@@ -33,6 +34,13 @@ export default function StaffPage() {
     username: '',
     password: '',
     role: 'waiter',
+  });
+  const [editForm, setEditForm] = useState({
+    fullName: '',
+    username: '',
+    password: '',
+    role: 'waiter' as 'admin' | 'waiter',
+    isActive: true,
   });
   const [newPassword, setNewPassword] = useState('');
   const [saving, setSaving] = useState(false);
@@ -86,6 +94,72 @@ export default function StaffPage() {
 
       setShowCreateModal(false);
       setCreateForm({ fullName: '', username: '', password: '', role: 'waiter' });
+      await loadStaff();
+    } catch {
+      setError('Network error');
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  function openEditModal(user: StaffUser) {
+    setEditingUser(user);
+    setEditForm({
+      fullName: user.fullName,
+      username: user.username,
+      password: '',
+      role: user.role,
+      isActive: user.isActive,
+    });
+    setError('');
+  }
+
+  async function handleSaveEdit() {
+    if (!editingUser) return;
+    if (!editForm.fullName.trim() || !editForm.username.trim()) {
+      setError('Full name and username are required.');
+      return;
+    }
+
+    if (editForm.username.trim().length < 3) {
+      setError('Username must be at least 3 characters.');
+      return;
+    }
+
+    if (editForm.password && editForm.password.length < 6) {
+      setError('New password must be at least 6 characters if specified.');
+      return;
+    }
+
+    setSaving(true);
+    setError('');
+
+    try {
+      const payload: Record<string, any> = {
+        id: editingUser.id,
+        fullName: editForm.fullName.trim(),
+        username: editForm.username.trim().toLowerCase(),
+        role: editForm.role,
+        isActive: editForm.isActive,
+      };
+
+      if (editForm.password) {
+        payload.password = editForm.password;
+      }
+
+      const res = await fetch('/api/staff', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+
+      const d = await res.json();
+      if (!res.ok) {
+        setError(d.error || 'Failed to update staff member');
+        return;
+      }
+
+      setEditingUser(null);
       await loadStaff();
     } catch {
       setError('Network error');
@@ -244,15 +318,23 @@ export default function StaffPage() {
                   <td className="py-3 px-4 text-right">
                     <div className="flex items-center justify-end gap-1.5">
                       <button
+                        onClick={() => openEditModal(u)}
+                        className="btn-secondary py-1 px-2.5 text-[11px] inline-flex items-center gap-1 hover:border-[#E5AE45] hover:text-[#E5AE45]"
+                        title="Edit Name, Username, or Details"
+                      >
+                        <Pencil className="w-3 h-3" /> Edit
+                      </button>
+
+                      <button
                         onClick={() => {
                           setResettingUser(u);
                           setNewPassword('');
                           setError('');
                         }}
                         className="btn-secondary py-1 px-2.5 text-[11px] inline-flex items-center gap-1"
-                        title="Reset Password"
+                        title="Quick Reset Password"
                       >
-                        <Key className="w-3 h-3" /> Reset Password
+                        <Key className="w-3 h-3" /> Password
                       </button>
 
                       {u.role !== 'admin' && (
@@ -347,6 +429,108 @@ export default function StaffPage() {
                 className="btn-primary flex-1 text-xs font-bold flex items-center justify-center gap-1.5"
               >
                 {saving && <Loader2 className="w-3.5 h-3.5 animate-spin" />} Create Account
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Staff Details Modal */}
+      {editingUser && (
+        <div
+          className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4"
+          onClick={() => setEditingUser(null)}
+        >
+          <div className="card p-6 w-full max-w-md space-y-4" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between pb-2 border-b border-[#E8DCC8]">
+              <div>
+                <h3 className="font-bold text-base text-[#3C2A20]">Edit Staff Details</h3>
+                <p className="text-xs text-[#8B7355]">Update name, username, or credentials for {editingUser.fullName}</p>
+              </div>
+              <button
+                onClick={() => setEditingUser(null)}
+                className="text-[#8B7355] hover:text-[#3C2A20]"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {error && (
+              <div className="bg-red-50 border border-red-200 text-[#C44536] p-3 rounded-lg text-xs">
+                {error}
+              </div>
+            )}
+
+            <div className="space-y-3">
+              <div>
+                <label className="label-text">Full Name *</label>
+                <input
+                  type="text"
+                  value={editForm.fullName}
+                  onChange={(e) => setEditForm({ ...editForm, fullName: e.target.value })}
+                  placeholder="e.g. Ramesh Thapa"
+                  className="input-field text-xs"
+                />
+              </div>
+
+              <div>
+                <label className="label-text">Username *</label>
+                <input
+                  type="text"
+                  value={editForm.username}
+                  onChange={(e) => setEditForm({ ...editForm, username: e.target.value })}
+                  placeholder="e.g. ramesh"
+                  className="input-field text-xs font-mono"
+                />
+                <p className="text-[10px] text-[#8B7355] mt-0.5">
+                  Sign-in username (case-insensitive, minimum 3 characters).
+                </p>
+              </div>
+
+              <div>
+                <label className="label-text">New Password (Optional)</label>
+                <input
+                  type="password"
+                  value={editForm.password}
+                  onChange={(e) => setEditForm({ ...editForm, password: e.target.value })}
+                  placeholder="Leave blank to keep current password"
+                  className="input-field text-xs"
+                />
+                <p className="text-[10px] text-[#8B7355] mt-0.5">
+                  Only enter a password if you want to change it (min 6 characters).
+                </p>
+              </div>
+
+              {editingUser.role !== 'admin' && (
+                <div className="pt-1">
+                  <label className="flex items-center gap-2 cursor-pointer select-none">
+                    <input
+                      type="checkbox"
+                      checked={editForm.isActive}
+                      onChange={(e) => setEditForm({ ...editForm, isActive: e.target.checked })}
+                      className="w-4 h-4 rounded text-[#E5AE45] focus:ring-[#E5AE45] border-[#E8DCC8] accent-[#E5AE45]"
+                    />
+                    <span className="text-xs font-medium text-[#3C2A20]">
+                      Active account (permitted to sign in and take orders)
+                    </span>
+                  </label>
+                </div>
+              )}
+            </div>
+
+            <div className="flex gap-2 pt-2">
+              <button
+                onClick={() => setEditingUser(null)}
+                className="btn-secondary flex-1 text-xs"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSaveEdit}
+                disabled={saving}
+                className="btn-primary flex-1 text-xs font-bold flex items-center justify-center gap-1.5"
+              >
+                {saving && <Loader2 className="w-3.5 h-3.5 animate-spin" />} Save Changes
               </button>
             </div>
           </div>
