@@ -6,7 +6,9 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "test:e2e": "tsx test-e2e.ts",
+    "reset:db": "tsx reset-db.ts"
   },
   "dependencies": {
     "@prisma/client": "^6.19.3",
