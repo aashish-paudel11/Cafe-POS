@@ -100,7 +100,6 @@ export default function LoginPage({ initialCafeName }: LoginPageProps = {}) {
             <Coffee className="w-8 h-8 text-white" />
           </div>
           <h1 className="text-3xl font-extrabold text-[#3C2A20] tracking-tight">{cafeName || 'Cafe POS'}</h1>
-          <p className="text-sm text-[#8B7355] mt-1 font-medium">Floor & Order Management System</p>
         </div>
 
         <div className="card p-8 shadow-sm border border-[#E8DCC8]">
