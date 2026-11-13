@@ -41,6 +41,16 @@ model BusinessSettings {
   updatedAt         DateTime @updatedAt
 }
 
+model TableSection {
+  id           String   @id @default(cuid())
+  name         String   @unique
+  displayOrder Int      @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([displayOrder])
+}
+
 model CafeTable {
   id            String   @id @default(cuid())
   tableName     String
