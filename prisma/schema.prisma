@@ -1,0 +1,159 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String   @id @default(cuid())
+  username      String   @unique
+  passwordHash  String
+  fullName      String
+  role          String   @default("waiter") // "admin" or "waiter"
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  createdOrders  Order[]   @relation("CreatedByUser")
+  updatedOrders  Order[]   @relation("UpdatedByUser")
+  payments       Payment[]
+  cancelledOrders Order[]  @relation("CancelledByUser")
+}
+
+model BusinessSettings {
+  id                String  @id @default("default")
+  cafeName          String  @default("My Cafe")
+  businessName      String  @default("")
+  address           String  @default("")
+  contactNumber     String  @default("")
+  email             String  @default("")
+  panLabel          String  @default("PAN No.")
+  panNumber         String  @default("")
+  currency          String  @default("NPR")
+  timezone          String  @default("Asia/Kathmandu")
+  receiptPaperSize  String  @default("80mm") // "58mm" or "80mm"
+  receiptFooter     String  @default("Thank you for visiting!")
+  taxNote           String  @default("All prices are inclusive of applicable taxes.")
+  logoUrl           String  @default("")
+  updatedAt         DateTime @updatedAt
+}
+
+model CafeTable {
+  id            String   @id @default(cuid())
+  tableName     String
+  capacity      Int      @default(4)
+  section       String   @default("")
+  displayOrder  Int      @default(0)
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  orders Order[]
+
+  @@index([isActive, displayOrder])
+}
+
+model MenuCategory {
+  id           String   @id @default(cuid())
+  name         String
+  displayOrder Int      @default(0)
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  items MenuItem[]
+
+  @@index([isActive, displayOrder])
+}
+
+model MenuItem {
+  id           String   @id @default(cuid())
+  name         String
+  description  String   @default("")
+  price        Float    // stored as float, but we use Decimal.js for calculations
+  categoryId   String
+  imageUrl     String   @default("")
+  isAvailable  Boolean  @default(true)
+  isActive     Boolean  @default(true)
+  displayOrder Int      @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  category  MenuCategory @relation(fields: [categoryId], references: [id])
+  orderItems OrderItem[]
+
+  @@index([categoryId, isAvailable])
+  @@index([isActive, displayOrder])
+}
+
+model Order {
+  id              String   @id @default(cuid())
+  orderNumber     String   @unique
+  tableId         String
+  tableName       String   // snapshot
+  status          String   @default("open") // "open", "paid", "cancelled"
+  createdById     String
+  updatedById     String
+  cancelledById   String?
+  cancelReason    String?
+  cancelledAt     DateTime?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  table      CafeTable @relation(fields: [tableId], references: [id])
+  createdBy  User      @relation("CreatedByUser", fields: [createdById], references: [id])
+  updatedBy  User      @relation("UpdatedByUser", fields: [updatedById], references: [id])
+  cancelledBy User?    @relation("CancelledByUser", fields: [cancelledById], references: [id])
+  items      OrderItem[]
+  payment    Payment?
+
+  @@index([tableId, status])
+  @@index([status])
+  @@index([createdAt])
+}
+
+model OrderItem {
+  id          String @id @default(cuid())
+  orderId     String
+  menuItemId  String
+  itemName    String  // snapshot
+  unitPrice   Float   // snapshot of price at order time
+  quantity    Int     @default(1)
+  notes       String  @default("")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  order    Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  menuItem MenuItem @relation(fields: [menuItemId], references: [id])
+
+  @@index([orderId])
+}
+
+model Payment {
+  id            String   @id @default(cuid())
+  orderId       String   @unique
+  receiptNumber String   @unique
+  amount        Float
+  method        String   // "cash", "qr", "card", "other"
+  paidById      String
+  paidAt        DateTime @default(now())
+
+  // Snapshot of business details at time of receipt
+  cafeName      String   @default("")
+  businessName  String   @default("")
+  address       String   @default("")
+  contactNumber String   @default("")
+  panLabel      String   @default("")
+  panNumber     String   @default("")
+  receiptFooter String   @default("")
+  taxNote       String   @default("")
+
+  order    Order @relation(fields: [orderId], references: [id])
+  paidBy   User  @relation(fields: [paidById], references: [id])
+
+  @@index([paidAt])
+  @@index([method])
+}
